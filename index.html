@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KMG Komagene Kraliyet Ailesi</title>
+
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --gold: #f7b500;
+      --bg1: #0b0b0b;
+      --bg2: #000;
+      --card: #121212;
+      --muted: rgba(255,255,255,.75);
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family:'Orbitron', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color:#fff;
+      background: radial-gradient(circle at 20% 10%, #1a1a1a 0%, var(--bg1) 45%, var(--bg2) 100%);
+      overflow-x:hidden;
+    }
+
+    /* Hafif hareketli arka plan */
+    body::before{
+      content:"";
+      position:fixed;
+      inset:-50%;
+      background:
+        radial-gradient(circle at 10% 20%, rgba(247,181,0,.10) 0%, transparent 30%),
+        radial-gradient(circle at 80% 30%, rgba(0,160,255,.08) 0%, transparent 35%),
+        radial-gradient(circle at 30% 80%, rgba(255,0,100,.06) 0%, transparent 35%);
+      animation: drift 18s ease-in-out infinite alternate;
+      pointer-events:none;
+      z-index:-1;
+    }
+    @keyframes drift{
+      from{ transform:translate3d(-1%, -1%, 0) scale(1.02); }
+      to{ transform:translate3d(1%, 1%, 0) scale(1.04); }
+    }
+
+    header{
+      padding:22px 14px 14px;
+      text-align:center;
+      border-bottom:2px solid rgba(247,181,0,.35);
+      background: linear-gradient(180deg, rgba(0,0,0,.85), rgba(0,0,0,.25));
+      position:sticky;
+      top:0;
+      backdrop-filter: blur(8px);
+      z-index:10;
+    }
+    header h1{
+      margin:0;
+      color:var(--gold);
+      letter-spacing:3px;
+      font-size:20px;
+    }
+    header .sub{
+      margin-top:6px;
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    /* Uçak intro */
+    #planeIntro{
+      position:fixed;
+      top:18%;
+      left:-240px;
+      font-size:52px;
+      z-index:9999;
+      filter: drop-shadow(0 0 12px rgba(247,181,0,.35));
+      animation: fly 2.8s ease-in-out forwards;
+      pointer-events:none;
+    }
+    @keyframes fly{
+      0%{ transform:translateX(0) rotate(-10deg); opacity:1; }
+      60%{ transform:translateX(55vw) translateY(-40px) rotate(8deg); opacity:1; }
+      100%{ transform:translateX(130vw) translateY(-70px) rotate(12deg); opacity:0; }
+    }
+
+    /* Taç efekti */
+    .crown{
+      position:fixed;
+      top:12px;
+      left:50%;
+      transform:translateX(-50%);
+      font-size:46px;
+      z-index:9998;
+      animation: glow 1.6s infinite alternate;
+      pointer-events:none;
+    }
+    @keyframes glow{
+      from{ filter:drop-shadow(0 0 8px rgba(247,181,0,.45)); opacity:.85; }
+      to{ filter:drop-shadow(0 0 22px rgba(247,181,0,.95)); opacity:1; }
+    }
+
+    /* Hoşgeldin overlay */
+    #welcomeOverlay{
+      position:fixed;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex-direction:column;
+      gap:10px;
+      background: radial-gradient(circle at center, rgba(0,0,0,.85), rgba(0,0,0,.96));
+      z-index:9997;
+      animation: overlayFade 3.2s forwards;
+    }
+    #welcomeOverlay .big{
+      font-size:28px;
+      color:var(--gold);
+      letter-spacing:2px;
+      text-shadow:0 0 18px rgba(247,181,0,.25);
+    }
+    #welcomeOverlay .small{
+      font-size:12px;
+      color:rgba(255,255,255,.7);
+    }
+    @keyframes overlayFade{
+      0%{ opacity:1; }
+      75%{ opacity:1; }
+      100%{ opacity:0; visibility:hidden; }
+    }
+
+    /* NAV */
+    nav{
+      display:flex;
+      justify-content:center;
+      gap:14px;
+      padding:16px 14px 8px;
+      flex-wrap:wrap;
+    }
+    .nav-item{
+      position:relative;
+      perspective:900px;
+    }
+    .nav-link{
+      display:inline-block;
+      padding:12px 16px;
+      background: rgba(15,15,15,.85);
+      border:1px solid rgba(247,181,0,.45);
+      color:#fff;
+      text-decoration:none;
+      border-radius:14px;
+      transition:.35s;
+      transform-style:preserve-3d;
+      min-width:130px;
+      text-align:center;
+      font-size:14px;
+    }
+    .nav-link:hover{
+      transform: rotateX(16deg) rotateY(-10deg) translateY(-2px) scale(1.03);
+      box-shadow:0 0 22px rgba(247,181,0,.35);
+      border-color: rgba(247,181,0,.8);
+    }
+
+    /* ikon üstünde "oturan" asker efekti (emoji ile) */
+    .character{
+      position:absolute;
+      top:-34px;
+      left:50%;
+      transform:translateX(-50%);
+      font-size:26px;
+      animation: float 2.6s ease-in-out infinite;
+      filter: drop-shadow(0 0 10px rgba(247,181,0,.25));
+      pointer-events:none;
+    }
+    @keyframes float{
+      0%,100%{ transform:translateX(-50%) translateY(0); }
+      50%{ transform:translateX(-50%) translateY(-8px); }
+    }
+
+    /* Layout */
+    .wrap{
+      max-width:1100px;
+      margin: 0 auto;
+      padding: 14px;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:14px;
+    }
+    @media(min-width: 980px){
+      .grid{
+        grid-template-columns: 1.2fr .8fr;
+        align-items:start;
+      }
+    }
+
+    .panel{
+      background: rgba(18,18,18,.85);
+      border:1px solid rgba(247,181,0,.25);
+      border-radius:16px;
+      padding:14px;
+      box-shadow: 0 0 26px rgba(0,0,0,.35);
+      backdrop-filter: blur(6px);
+    }
+
+    .panel h2{
+      margin: 0 0 10px;
+      font-size:14px;
+      color:var(--gold);
+      letter-spacing:1px;
+    }
+
+    /* Haber kartları */
+    .news-card{
+      background: rgba(0,0,0,.35);
+      border:1px solid rgba(255,255,255,.08);
+      border-left:4px solid rgba(247,181,0,.75);
+      border-radius:14px;
+      padding:12px;
+      margin-bottom:10px;
+      transition:.3s;
+    }
+    .news-card:hover{
+      transform: translateY(-2px);
+      box-shadow:0 0 22px rgba(247,181,0,.18);
+    }
+    .news-card .t{ font-size:13px; margin:0 0 6px; }
+    .news-card .p{ font-size:12px; color:rgba(255,255,255,.8); margin:0; line-height:1.35; }
+
+    /* Reels */
+    .reels{
+      display:grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap:10px;
+    }
+    @media(min-width: 480px){
+      .reels{ grid-template-columns: repeat(3, 1fr); }
+    }
+    @media(min-width: 980px){
+      .reels{ grid-template-columns: repeat(2, 1fr); }
+    }
+    .reel{
+      background:#000;
+      border:1px solid rgba(247,181,0,.35);
+      border-radius:14px;
+      overflow:hidden;
+      transition:.3s;
+      position:relative;
+      transform-style:preserve-3d;
+    }
+    .reel:hover{
+      transform: rotateY(-10deg) translateY(-2px) scale(1.01);
+      box-shadow: 0 0 20px rgba(247,181,0,.22);
+    }
+    .reel::before{
+      content:"🎬";
+      position:absolute;
+      top:8px;
+      left:10px;
+      font-size:16px;
+      z-index:2;
+      filter: drop-shadow(0 0 10px rgba(247,181,0,.25));
+    }
+    .reel video{
+      width:100%;
+      height:160px;
+      object-fit:cover;
+      display:block;
+      background:#111;
+    }
+    .reel .cap{
+      padding:8px 10px;
+      font-size:11px;
+      color:rgba(255,255,255,.8);
+      border-top:1px solid rgba(255,255,255,.08);
+    }
+
+    /* Chat */
+    #chat{
+      height: 280px;
+      overflow:auto;
+      border:1px solid rgba(247,181,0,.35);
+      background: rgba(0,0,0,.35);
+      border-radius:14px;
+      padding:10px;
+      text-align:left;
+    }
+    .row{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:center;
+      margin-top:10px;
+    }
+    input{
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(10,10,10,.75);
+      color:#fff;
+      font-family: inherit;
+      font-size:12px;
+      outline:none;
+      min-width: 160px;
+    }
+    input:focus{
+      border-color: rgba(247,181,0,.6);
+      box-shadow:0 0 0 3px rgba(247,181,0,.12);
+    }
+
+    button{
+      padding:10px 14px;
+      border-radius:12px;
+      border:1px solid rgba(247,181,0,.45);
+      background: rgba(247,181,0,.95);
+      color:#111;
+      font-weight:800;
+      cursor:pointer;
+      font-family:inherit;
+      font-size:12px;
+      transition:.2s;
+    }
+    button:hover{ transform: translateY(-1px); }
+    button:active{ transform: translateY(0); }
+
+    #micBtn{
+      width:56px;
+      height:56px;
+      border-radius:50%;
+      background: #b80000;
+      border:1px solid rgba(255,255,255,.12);
+      color:#fff;
+      font-size:18px;
+      box-shadow: 0 0 18px rgba(184,0,0,.15);
+    }
+
+    .system{
+      color: var(--gold);
+    }
+    .muted{
+      font-size:11px;
+      color: rgba(255,255,255,.7);
+      margin-top:6px;
+    }
+
+    footer{
+      text-align:center;
+      padding:18px 12px 28px;
+      color:rgba(255,255,255,.55);
+      font-size:11px;
+    }
+    a.small-link{
+      color:rgba(247,181,0,.9);
+      text-decoration:none;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="planeIntro">✈️</div>
+  <div class="crown">👑</div>
+
+  <div id="welcomeOverlay">
+    <div class="big">👑 HOŞGELDİN KRAL 👑</div>
+    <div class="small">KMG Komagene Kraliyet Ailesi</div>
+  </div>
+
+  <header>
+    <h1>KMG KOMAGENE KRALİYET AİLESİ</h1>
+    <div class="sub">PUBG tarzı klan merkezi • Haber • Reels • Oda & Chat • Mikrofon</div>
+  </header>
+
+  <nav>
+    <div class="nav-item">
+      <div class="character">🪖🔫</div>
+      <a class="nav-link" href="#haberler">Haberler</a>
+    </div>
+    <div class="nav-item">
+      <div class="character">🪖🥘</div>
+      <a class="nav-link" href="#reels">Reels</a>
+    </div>
+    <div class="nav-item">
+      <div class="character">🪖🎯</div>
+      <a class="nav-link" href="#oda">Kraliyet Odası</a>
+    </div>
+  </nav>
+
+  <div class="wrap">
+    <div class="grid">
+
+      <!-- SOL: Haber + Oda -->
+      <div class="panel" id="oda">
+        <h2>👑 Kraliyet Odası (Chat + Mikrofon)</h2>
+
+        <div class="row">
+          <button id="guestBtn">Misafir Giriş</button>
+          <input id="username" placeholder="İsmin" />
+          <input id="room" placeholder="Oda Kodu (örn: KMG1)" />
+          <button id="joinBtn">Odaya Katıl</button>
+        </div>
+
+        <div class="muted">
+          Not: Render free plan ise ilk girişte 20–40 sn “uyanma” olabilir.
+        </div>
+
+        <div style="height:10px"></div>
+
+        <div id="chat"></div>
+
+        <div class="row">
+          <input id="message" placeholder="Mesaj yaz..." style="min-width:240px" />
+          <button id="sendBtn">Gönder</button>
+          <button id="micBtn" title="Mikrofon Aç/Kapat">🎤</button>
+        </div>
+
+        <div class="muted" id="statusLine">Durum: Bağlanıyor…</div>
+
+        <div style="height:16px"></div>
+
+        <h2 id="haberler">📰 Son Haberler</h2>
+        <div class="news-card">
+          <p class="t">🔥 Yeni Turnuva Duyurusu</p>
+          <p class="p">KMG Kraliyet Ailesi turnuva moduna geçti. Hazırlıklar başladı!</p>
+        </div>
+        <div class="news-card">
+          <p class="t">👑 Yeni Üye Katıldı</p>
+          <p class="p">Kraliyet ailesine yeni elit oyuncu katıldı. Hoşgeldin kral!</p>
+        </div>
+        <div class="news-card">
+          <p class="t">🎯 Antrenman Saati</p>
+          <p class="p">Akşam antrenmanında M4 + sniper odak. Takım oyunu şart.</p>
+        </div>
+      </div>
+
+      <!-- SAĞ: Reels -->
+      <div class="panel" id="reels">
+        <h2>🎬 Reels Alanı</h2>
+        <div class="muted">Şimdilik örnek videolar. (İstersen sonra yükleme sistemini ekleriz.)</div>
+        <div style="height:10px"></div>
+
+        <div class="reels">
+          <div class="reel">
+            <video controls playsinline>
+              <source src="video1.mp4" type="video/mp4">
+            </video>
+            <div class="cap">KMG highlight #1</div>
+          </div>
+          <div class="reel">
+            <video controls playsinline>
+              <source src="video2.mp4" type="video/mp4">
+            </video>
+            <div class="cap">KMG highlight #2</div>
+          </div>
+          <div class="reel">
+            <video controls playsinline>
+              <source src="video3.mp4" type="video/mp4">
+            </video>
+            <div class="cap">KMG reels #3</div>
+          </div>
+          <div class="reel">
+            <video controls playsinline>
+              <source src="video4.mp4" type="video/mp4">
+            </video>
+            <div class="cap">KMG reels #4</div>
+          </div>
+        </div>
+
+        <div style="height:16px"></div>
+
+        <h2>🎵 Lobby Müziği</h2>
+        <div class="muted">
+          Müziğin çalması için repo’ya <b>lobby.mp3</b> eklemen gerekir.
+          (İstersen sadece butonla başlatırız.)
+        </div>
+
+        <audio id="lobbyMusic" loop>
+          <source src="lobby.mp3" type="audio/mpeg">
+        </audio>
+
+        <div class="row">
+          <button id="musicBtn">Müziği Başlat</button>
+          <button id="musicStopBtn">Durdur</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <footer>
+    © 2026 KMG Komagene Kraliyet Ailesi •
+    <a class="small-link" href="#oda">Kraliyet Odasına Dön</a>
+  </footer>
+
+  <script>
+    // ✅ Render backend (websocket zorlamalı)
+    const socket = io("https://kmg-server-xz9a.onrender.com", {
+      transports: ["websocket"],
+      secure: true
+    });
+
+    // UI
+    const chatEl = document.getElementById("chat");
+    const statusLine = document.getElementById("statusLine");
+    const guestBtn = document.getElementById("guestBtn");
+    const joinBtn = document.getElementById("joinBtn");
+    const sendBtn = document.getElementById("sendBtn");
+    const musicBtn = document.getElementById("musicBtn");
+    const musicStopBtn = document.getElementById("musicStopBtn");
+    const lobbyMusic = document.getElementById("lobbyMusic");
+
+    let micEnabled = false;
+    let stream = null;
+    let joined = false;
+    let lastSend = 0;
+
+    // Hoşgeldin sesi (kullanıcı etkileşimi gerektirebilir)
+    window.addEventListener("load", () => {
+      try{
+        const speech = new SpeechSynthesisUtterance("Hoşgeldin kral");
+        speech.lang = "tr-TR";
+        speechSynthesis.speak(speech);
+      }catch(e){}
+    });
+
+    // Socket durumları
+    socket.on("connect", () => statusLine.textContent = "Durum: Bağlandı ✅");
+    socket.on("disconnect", () => statusLine.textContent = "Durum: Bağlantı kesildi ❌");
+    socket.on("connect_error", () => statusLine.textContent = "Durum: Bağlanamadı (Render uyanıyor olabilir) ⏳");
+
+    // Chat yardımcıları
+    function escapeHtml(str){
+      return String(str ?? "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+    function addLine(html){
+      chatEl.innerHTML += html;
+      chatEl.scrollTop = chatEl.scrollHeight;
+    }
+
+    // Misafir
+    guestBtn.addEventListener("click", () => {
+      const randomId = "Misafir" + Math.floor(Math.random()*9999);
+      document.getElementById("username").value = randomId;
+    });
+
+    // Join
+    joinBtn.addEventListener("click", () => {
+      const username = document.getElementById("username").value.trim();
+      const room = document.getElementById("room").value.trim();
+
+      if(!username || !room){
+        alert("İsim ve oda kodu gir kral 👑");
+        return;
+      }
+
+      socket.emit("join-room", room, username);
+      joined = true;
+
+      addLine(`<p class="system">👑 ${escapeHtml(username)} odaya katıldı</p>`);
+
+      // Odaya katılınca "Yeni kral katıldı" anonsu
+      try{
+        const speech = new SpeechSynthesisUtterance("Yeni kral katıldı");
+        speech.lang = "tr-TR";
+        speech.pitch = 0.85;
+        speechSynthesis.speak(speech);
+      }catch(e){}
+    });
+
+    // Send message
+    sendBtn.addEventListener("click", () => {
+      if(!joined){
+        alert("Önce odaya katıl kral 👑");
+        return;
+      }
+
+      const now = Date.now();
+      if(now - lastSend < 900) return; // client-side spam limiti
+      lastSend = now;
+
+      const msgEl = document.getElementById("message");
+      const msg = (msgEl.value || "").trim();
+      if(!msg) return;
+
+      socket.emit("send-message", msg);
+      msgEl.value = "";
+    });
+
+    // Enter ile mesaj
+    document.getElementById("message").addEventListener("keydown", (e) => {
+      if(e.key === "Enter") sendBtn.click();
+    });
+
+    // Receive
+    socket.on("receive-message", (data) => {
+      addLine(`<p><b>${escapeHtml(data.user)}:</b> ${escapeHtml(data.text)}</p>`);
+    });
+
+    // Mic
+    document.getElementById("micBtn").addEventListener("click", async () => {
+      try{
+        if(!micEnabled){
+          stream = await navigator.mediaDevices.getUserMedia({audio:true});
+          document.getElementById("micBtn").style.background = "#1aa34a";
+          micEnabled = true;
+        }else{
+          if(stream) stream.getTracks().forEach(t => t.stop());
+          document.getElementById("micBtn").style.background = "#b80000";
+          micEnabled = false;
+        }
+      }catch(e){
+        alert("Mikrofon izni verilemedi kral 👑");
+      }
+    });
+
+    // Music controls (autoplay kısıtları nedeniyle butonla)
+    musicBtn.addEventListener("click", async () => {
+      try{
+        await lobbyMusic.play();
+      }catch(e){
+        alert("Müzik çalamadı. lobby.mp3 dosyasını repo’ya ekle veya tarayıcı izin vermedi.");
+      }
+    });
+    musicStopBtn.addEventListener("click", () => {
+      lobbyMusic.pause();
+      lobbyMusic.currentTime = 0;
+    });
+  </script>
+</body>
+</html>
